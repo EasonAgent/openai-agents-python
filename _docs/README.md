@@ -5,7 +5,7 @@ NOTE: 目前仅仅clone下来, 未做改写
 
 ## todos
 - [x] upgrade to 0.1.16 (2025-05-28)
-- [ ] test looong input condition
+- [x] test looong input condition @2025-05-28
 
 
 ## 更新到 0.1.13

@@ -1,5 +1,6 @@
 from openai import AsyncOpenAI
 
+
 async def test_openai_model(openai_client: AsyncOpenAI):
     """Test the availability of the OpenAI API."""
     response = await openai_client.chat.completions.create(

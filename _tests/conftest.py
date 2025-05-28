@@ -1,13 +1,19 @@
 import os
+import logging
+import pathlib
+import dotenv
 import pytest
 from openai import AsyncOpenAI
 from agents import OpenAIChatCompletionsModel, Agent
+
+dotenv.load_dotenv(pathlib.Path(__file__).parent / ".env")
 
 
 @pytest.fixture(scope="session")
 def openai_client() -> AsyncOpenAI:
     BASE_URL = os.getenv("OPENAI_BASE_URL") or ""
     API_KEY = os.getenv("OPENAI_API_KEY") or ""
+    logging.info(f"> using base_url: {BASE_URL}")
     client = AsyncOpenAI(base_url=BASE_URL, api_key=API_KEY)
     return client
 
