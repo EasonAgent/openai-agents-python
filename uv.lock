@@ -1047,7 +1047,7 @@ wheels = [
 
 [[package]]
 name = "mcp"
-version = "1.9.1"
+version = "1.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio", marker = "python_full_version >= '3.10'" },
@@ -1060,9 +1060,9 @@ dependencies = [
     { name = "starlette", marker = "python_full_version >= '3.10'" },
     { name = "uvicorn", marker = "python_full_version >= '3.10' and sys_platform != 'emscripten'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/bc/54aec2c334698cc575ca3b3481eed627125fb66544152fa1af927b1a495c/mcp-1.9.1.tar.gz", hash = "sha256:19879cd6dde3d763297617242888c2f695a95dfa854386a6a68676a646ce75e4", size = 316247 }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/13/16b712e8a3be6a736b411df2fc6b4e75eb1d3e99b1cd57a3a1decf17f612/mcp-1.8.1.tar.gz", hash = "sha256:ec0646271d93749f784d2316fb5fe6102fb0d1be788ec70a9e2517e8f2722c0e", size = 265605 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/c0/4ac795585a22a0a2d09cd2b1187b0252d2afcdebd01e10a68bbac4d34890/mcp-1.9.1-py3-none-any.whl", hash = "sha256:2900ded8ffafc3c8a7bfcfe8bc5204037e988e753ec398f371663e6a06ecd9a9", size = 130261 },
+    { url = "https://files.pythonhosted.org/packages/1c/5d/91cf0d40e40ae9ecf8d4004e0f9611eea86085aa0b5505493e0ff53972da/mcp-1.8.1-py3-none-any.whl", hash = "sha256:948e03783859fa35abe05b9b6c0a1d5519be452fc079dc8d7f682549591c1770", size = 119761 },
 ]
 
 [[package]]
@@ -1461,7 +1461,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "1.82.0"
+version = "1.81.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1473,14 +1473,14 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/19/6b09bb3132f7e1a7a2291fd46fb33659bbccca041f863abd682e14ba86d7/openai-1.82.0.tar.gz", hash = "sha256:b0a009b9a58662d598d07e91e4219ab4b1e3d8ba2db3f173896a92b9b874d1a7", size = 461092 }
+sdist = { url = "https://files.pythonhosted.org/packages/1c/89/a1e4f3fa7ca4f7fec90dbf47d93b7cd5ff65924926733af15044e302a192/openai-1.81.0.tar.gz", hash = "sha256:349567a8607e0bcffd28e02f96b5c2397d0d25d06732d90ab3ecbf97abf030f9", size = 456861 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/4b/a59464ee5f77822a81ee069b4021163a0174940a92685efc3cf8b4c443a3/openai-1.82.0-py3-none-any.whl", hash = "sha256:8c40647fea1816516cb3de5189775b30b5f4812777e40b8768f361f232b61b30", size = 720412 },
+    { url = "https://files.pythonhosted.org/packages/02/66/bcc7f9bf48e8610a33e3b5c96a5a644dad032d92404ea2a5e8b43ba067e8/openai-1.81.0-py3-none-any.whl", hash = "sha256:1c71572e22b43876c5d7d65ade0b7b516bb527c3d44ae94111267a09125f7bae", size = 717529 },
 ]
 
 [[package]]
 name = "openai-agents"
-version = "0.0.13"
+version = "0.0.16"
 source = { editable = "." }
 dependencies = [
     { name = "griffe" },
