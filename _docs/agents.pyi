@@ -1,5 +1,5 @@
 """ 
-见 [[openai_agents.md#框架设计]]
+见 @FA-agents/docs/core/agents
 """
 
 import abc
