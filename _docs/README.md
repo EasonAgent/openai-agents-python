@@ -1,6 +1,13 @@
 NOTE: 参见 [agent_ref/doc]
 NOTE: 目前仅仅clone下来, 未做改写
 
+1. openai-agents [github](https://github.com/openai/openai-agents-python/releases); [doc](https://openai.github.io/openai-agents-python/)
+
+## todos
+- [x] upgrade to 0.1.16 (2025-05-28)
+- [ ] test looong input condition
+
+
 ## 更新到 0.1.13
 1. 支持 LiteLLM 模型 (src/agents/extensions/models/litellm_model.py)
 2. 支持 multi_provider (src/agents/models/multi_provider.py)

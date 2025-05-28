@@ -134,6 +134,10 @@ filterwarnings = [
 markers = [
     "allow_call_model_methods: mark test as allowing calls to real model implementations",
 ]
+# NEW
+addopts = "-v -s"
+log_cli = true
+log_cli_level = "INFO"
 
 [tool.inline-snapshot]
 format-command = "ruff format --stdin-filename {filename}"
