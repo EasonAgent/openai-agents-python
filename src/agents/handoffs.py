@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from collections.abc import Awaitable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Generic, cast, overload
@@ -99,8 +100,7 @@ class Handoff(Generic[TContext]):
     """
 
     def get_transfer_message(self, agent: Agent[Any]) -> str:
-        base = f"{{'assistant': '{agent.name}'}}"
-        return base
+        return json.dumps({"assistant": agent.name})
 
     @classmethod
     def default_tool_name(cls, agent: Agent[Any]) -> str:
@@ -168,7 +168,7 @@ def handoff(
         input_filter: a function that filters the inputs that are passed to the next agent.
     """
     assert (on_handoff and input_type) or not (on_handoff and input_type), (
-        "You must provide either both on_input and input_type, or neither"
+        "You must provide either both on_handoff and input_type, or neither"
     )
     type_adapter: TypeAdapter[Any] | None
     if input_type is not None:

@@ -88,7 +88,7 @@ class _MCPServerWithClientSession(MCPServer, abc.ABC):
         tuple[
             MemoryObjectReceiveStream[SessionMessage | Exception],
             MemoryObjectSendStream[SessionMessage],
-            GetSessionIdCallback | None
+            GetSessionIdCallback | None,
         ]
     ]:
         """Create the streams for the server."""
@@ -243,7 +243,7 @@ class MCPServerStdio(_MCPServerWithClientSession):
         tuple[
             MemoryObjectReceiveStream[SessionMessage | Exception],
             MemoryObjectSendStream[SessionMessage],
-            GetSessionIdCallback | None
+            GetSessionIdCallback | None,
         ]
     ]:
         """Create the streams for the server."""
@@ -314,7 +314,7 @@ class MCPServerSse(_MCPServerWithClientSession):
         tuple[
             MemoryObjectReceiveStream[SessionMessage | Exception],
             MemoryObjectSendStream[SessionMessage],
-            GetSessionIdCallback | None
+            GetSessionIdCallback | None,
         ]
     ]:
         """Create the streams for the server."""
@@ -340,10 +340,10 @@ class MCPServerStreamableHttpParams(TypedDict):
     headers: NotRequired[dict[str, str]]
     """The headers to send to the server."""
 
-    timeout: NotRequired[timedelta]
+    timeout: NotRequired[timedelta | float]
     """The timeout for the HTTP request. Defaults to 5 seconds."""
 
-    sse_read_timeout: NotRequired[timedelta]
+    sse_read_timeout: NotRequired[timedelta | float]
     """The timeout for the SSE connection, in seconds. Defaults to 5 minutes."""
 
     terminate_on_close: NotRequired[bool]
@@ -394,16 +394,16 @@ class MCPServerStreamableHttp(_MCPServerWithClientSession):
         tuple[
             MemoryObjectReceiveStream[SessionMessage | Exception],
             MemoryObjectSendStream[SessionMessage],
-            GetSessionIdCallback | None
+            GetSessionIdCallback | None,
         ]
     ]:
         """Create the streams for the server."""
         return streamablehttp_client(
             url=self.params["url"],
             headers=self.params.get("headers", None),
-            timeout=self.params.get("timeout", timedelta(seconds=30)),
-            sse_read_timeout=self.params.get("sse_read_timeout", timedelta(seconds=60 * 5)),
-            terminate_on_close=self.params.get("terminate_on_close", True)
+            timeout=self.params.get("timeout", 5),
+            sse_read_timeout=self.params.get("sse_read_timeout", 60 * 5),
+            terminate_on_close=self.params.get("terminate_on_close", True),
         )
 
     @property

@@ -270,7 +270,7 @@ The `agent.as_tool` function is a convenience method to make it easy to turn an 
 ```python
 @function_tool
 async def run_my_agent() -> str:
-  """A tool that runs the agent with custom configs".
+    """A tool that runs the agent with custom configs"""
 
     agent = Agent(name="My agent", instructions="...")
 
@@ -282,6 +282,33 @@ async def run_my_agent() -> str:
     )
 
     return str(result.final_output)
+```
+
+### Custom output extraction
+
+In certain cases, you might want to modify the output of the tool-agents before returning it to the central agent. This may be useful if you want to:
+
+- Extract a specific piece of information (e.g., a JSON payload) from the sub-agent's chat history.
+- Convert or reformat the agent’s final answer (e.g., transform Markdown into plain text or CSV).
+- Validate the output or provide a fallback value when the agent’s response is missing or malformed.
+
+You can do this by supplying the `custom_output_extractor` argument to the `as_tool` method:
+
+```python
+async def extract_json_payload(run_result: RunResult) -> str:
+    # Scan the agent’s outputs in reverse order until we find a JSON-like message from a tool call.
+    for item in reversed(run_result.new_items):
+        if isinstance(item, ToolCallOutputItem) and item.output.strip().startswith("{"):
+            return item.output.strip()
+    # Fallback to an empty JSON object if nothing was found
+    return "{}"
+
+
+json_tool = data_agent.as_tool(
+    tool_name="get_data_json",
+    tool_description="Run the data agent and return only its JSON payload",
+    custom_output_extractor=extract_json_payload,
+)
 ```
 
 ## Handling errors in function tools
