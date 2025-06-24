@@ -1,8 +1,9 @@
 import abc
 from collections.abc import AsyncIterator
 from typing import Literal
+from dataclasses import dataclass, field
 
-from .item import TResponseInputItem, TResponseOutputItem, TResponseStreamEvent
+from .item import TResponseInputItem, TResponseOutputItem, TResponseStreamEvent, ModelResponse
 from .tool import Tool, Handoff
 
 """ --------------------------------------------------------------------------------------------------------------------
@@ -22,13 +23,6 @@ class Model(abc.ABC):
 class OpenAIChatCompletionsModel(Model): ...
 class OpenAIResponsesModel(Model): ...
 
-
-@dataclass
-class ModelResponse:
-    output: list[TResponseOutputItem]
-    usage: Usage
-    referenceable_id: str | None
-    def to_input_items(self) -> list[TResponseInputItem]: ...
 
 # 提供模型
 class ModelProvider(abc.ABC):
@@ -57,10 +51,17 @@ class ModelTracing(enum.Enum):
     def is_disabled(self) -> bool: ...
     def include_data(self) -> bool: ...
 
+""" --------------------------------------------------------------------------------------------------------------------
+Usage
+-------------------------------------------------------------------------------------------------------------------- """
+# src/agents/usage.py
+from openai.types.responses.response_usage import InputTokensDetails, OutputTokensDetails
 @dataclass
 class Usage:
     requests: int = 0
     input_tokens: int = 0
+    input_tokens_details: InputTokensDetails = field(default_factory=lambda: InputTokensDetails(cached_tokens=0))
     output_tokens: int = 0
+    output_tokens_details: OutputTokensDetails = field(default_factory=lambda: OutputTokensDetails(reasoning_tokens=0))
     total_tokens: int = 0
     def add(self, other: "Usage") -> None: ...

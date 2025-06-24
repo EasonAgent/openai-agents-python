@@ -16,6 +16,7 @@ TResponseStreamEvent = ResponseStreamEvent
 T = TypeVar("T", bound=Union[TResponseOutputItem, TResponseInputItem])
 
 from .agent import Agent
+from .model import Usage
 
 # --------------------------------------------------------------------------------
 # StreamEvent: 对于 Runner/agent 流式行为的建模
@@ -36,6 +37,9 @@ class AgentUpdatedStreamEvent:
     type: Literal["agent_updated_stream_event"] = "agent_updated_stream_event"
 
 
+# --------------------------------------------------------------------------------
+# Item
+# --------------------------------------------------------------------------------
 T = TypeVar("T", bound=Union[TResponseOutputItem, TResponseInputItem])
 @dataclass
 class RunItemBase(Generic[T], abc.ABC):
@@ -74,6 +78,14 @@ class ReasoningItem(RunItemBase[ResponseReasoningItem]):
     type: Literal["reasoning_item"] = "reasoning_item"
 
 RunItem: TypeAlias = Union[MessageOutputItem, HandoffCallItem, HandoffOutputItem, ToolCallItem, ToolCallOutputItem, ReasoningItem]
+
+
+@dataclass
+class ModelResponse:
+    output: list[TResponseOutputItem]
+    usage: Usage
+    response_id: str | None
+    def to_input_items(self) -> list[TResponseInputItem]: ...
 
 
 # --------------------------------------------------------------------------------
