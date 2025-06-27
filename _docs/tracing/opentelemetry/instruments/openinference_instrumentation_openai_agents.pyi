@@ -97,6 +97,9 @@ class OpenInferenceTracingProcessor(TracingProcessor):
             ### 这里核心看 @agents 里面封装好的 SpanData 模型 ###
         4. 调用 otel_span.set_status()
         5. 调用 otel_span.end()
+
+        NOTE: 下面的span类型无法和 @agents 里面封装好的 SpanData 模型对应!
+        ref: https://github.com/Arize-ai/openinference/issues/1800
         """
         if not (otel_span := self._otel_spans.pop(span.span_id, None)): return
         otel_span.update_name(_get_span_name(span))

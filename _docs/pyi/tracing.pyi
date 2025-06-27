@@ -39,6 +39,17 @@ SpanData
     1. type: 包括 agent|generation|function|handoff|guardrail|response|custom
     2. export() 方法: 输出dict, 注意都应该是基础数据类别! 
 2. 对齐 create.py 中的 `*_span` 创建函数, 包括上述类别
+    例如: agent_span() -> AgentSpanData
+
+细分:
+    1. AgentSpanData: "name", "handoffs", "tools", "output_type"
+    2. FunctionSpanData: "name", "input", "output", "mcp_data"
+    3. GenerationSpanData: "name", "input", "output", "model", "model_config", "usage"
+    4. ResponseSpanData: "response", "input"
+    5. HandoffSpanData: "from_agent", "to_agent"
+    6. CustomSpanData: "name", "data"
+    7. GuardrailSpanData: "name", "triggered"
+    8. MCPListToolsSpanData: "server", "results"
 -------------------------------------------------------------------------------------------------------------------- """
 class SpanData(abc.ABC):
     def export(self) -> dict[str, Any]:
@@ -56,6 +67,28 @@ class AgentSpanData(SpanData):
         return "agent"
     def export(self) -> dict[str, Any]:
         return {...}
+
+class FunctionSpanData(SpanData):
+    __slots__ = ("name", "input", "output", "mcp_data")
+
+class GenerationSpanData(SpanData):
+    __slots__ = ("name", "input", "output", "model", "model_config", "usage")
+
+class ResponseSpanData(SpanData):
+    __slots__ = ("response", "input")
+
+class HandoffSpanData(SpanData):
+    """ Represents a Handoff Span in the trace. """
+    __slots__ = ("from_agent", "to_agent")
+
+class CustomSpanData(SpanData):
+    __slots__ = ("name", "data")
+
+class GuardrailSpanData(SpanData):
+    __slots__ = ("name", "triggered")
+
+class MCPListToolsSpanData(SpanData):
+    __slots__ = ("server", "results")
 
 
 """ --------------------------------------------------------------------------------------------------------------------
