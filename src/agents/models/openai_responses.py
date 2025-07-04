@@ -96,7 +96,13 @@ class OpenAIResponsesModel(Model):
                 else:
                     logger.debug(
                         "LLM resp:\n"
-                        f"{json.dumps([x.model_dump() for x in response.output], indent=2)}\n"
+                        f"""{
+                            json.dumps(
+                                [x.model_dump() for x in response.output],
+                                indent=2,
+                                ensure_ascii=False,
+                            )
+                        }\n"""
                     )
 
                 usage = (
@@ -240,13 +246,17 @@ class OpenAIResponsesModel(Model):
         converted_tools = Converter.convert_tools(tools, handoffs)
         response_format = Converter.get_response_format(output_schema)
 
+        include: list[ResponseIncludable] = converted_tools.includes
+        if model_settings.response_include is not None:
+            include = list({*include, *model_settings.response_include})
+
         if _debug.DONT_LOG_MODEL_DATA:
             logger.debug("Calling LLM")
         else:
             logger.debug(
                 f"Calling LLM {self.model} with input:\n"
-                f"{json.dumps(list_input, indent=2)}\n"
-                f"Tools:\n{json.dumps(converted_tools.tools, indent=2)}\n"
+                f"{json.dumps(list_input, indent=2, ensure_ascii=False)}\n"
+                f"Tools:\n{json.dumps(converted_tools.tools, indent=2, ensure_ascii=False)}\n"
                 f"Stream: {stream}\n"
                 f"Tool choice: {tool_choice}\n"
                 f"Response format: {response_format}\n"
@@ -258,7 +268,7 @@ class OpenAIResponsesModel(Model):
             instructions=self._non_null_or_not_given(system_instructions),
             model=self.model,
             input=list_input,
-            include=converted_tools.includes,
+            include=include,
             tools=converted_tools.tools,
             prompt=self._non_null_or_not_given(prompt),
             temperature=self._non_null_or_not_given(model_settings.temperature),
