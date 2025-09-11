@@ -8,7 +8,7 @@ from typing import Any, Callable, Generic, cast, get_args
 
 from openai.types.responses import (
     ResponseCompletedEvent,
-    ResponseOutputItemAddedEvent,
+    ResponseOutputItemDoneEvent,
 )
 from openai.types.responses.response_prompt_param import (
     ResponsePromptParam,
@@ -411,7 +411,8 @@ class AgentRunner:
         if run_config is None:
             run_config = RunConfig()
 
-        # Prepare input with session if enabled
+        # Keep original user input separate from session-prepared input
+        original_user_input = input
         prepared_input = await self._prepare_input_with_session(input, session)
 
         tool_use_tracker = AgentToolUseTracker()
@@ -437,6 +438,9 @@ class AgentRunner:
             current_span: Span[AgentSpanData] | None = None
             current_agent = starting_agent
             should_run_agent_start_hooks = True
+
+            # save only the new user input to the session, not the combined history
+            await self._save_result_to_session(session, original_user_input, [])
 
             try:
                 while True:
@@ -537,9 +541,7 @@ class AgentRunner:
                             output_guardrail_results=output_guardrail_results,
                             context_wrapper=context_wrapper,
                         )
-
-                        # Save the conversation to session if enabled
-                        await self._save_result_to_session(session, input, result)
+                        await self._save_result_to_session(session, [], turn_result.new_step_items)
 
                         return result
                     elif isinstance(turn_result.next_step, NextStepHandoff):
@@ -548,7 +550,7 @@ class AgentRunner:
                         current_span = None
                         should_run_agent_start_hooks = True
                     elif isinstance(turn_result.next_step, NextStepRunAgain):
-                        pass
+                        await self._save_result_to_session(session, [], turn_result.new_step_items)
                     else:
                         raise AgentsException(
                             f"Unknown next step type: {type(turn_result.next_step)}"
@@ -784,6 +786,8 @@ class AgentRunner:
             # Update the streamed result with the prepared input
             streamed_result.input = prepared_input
 
+            await AgentRunner._save_result_to_session(session, starting_input, [])
+
             while True:
                 if streamed_result.is_complete:
                     break
@@ -887,24 +891,15 @@ class AgentRunner:
                         streamed_result.is_complete = True
 
                         # Save the conversation to session if enabled
-                        # Create a temporary RunResult for session saving
-                        temp_result = RunResult(
-                            input=streamed_result.input,
-                            new_items=streamed_result.new_items,
-                            raw_responses=streamed_result.raw_responses,
-                            final_output=streamed_result.final_output,
-                            _last_agent=current_agent,
-                            input_guardrail_results=streamed_result.input_guardrail_results,
-                            output_guardrail_results=streamed_result.output_guardrail_results,
-                            context_wrapper=context_wrapper,
-                        )
                         await AgentRunner._save_result_to_session(
-                            session, starting_input, temp_result
+                            session, [], turn_result.new_step_items
                         )
 
                         streamed_result._event_queue.put_nowait(QueueCompleteSentinel())
                     elif isinstance(turn_result.next_step, NextStepRunAgain):
-                        pass
+                        await AgentRunner._save_result_to_session(
+                            session, [], turn_result.new_step_items
+                        )
                 except AgentsException as exc:
                     streamed_result.is_complete = True
                     streamed_result._event_queue.put_nowait(QueueCompleteSentinel())
@@ -994,10 +989,16 @@ class AgentRunner:
         )
 
         # Call hook just before the model is invoked, with the correct system_prompt.
-        if agent.hooks:
-            await agent.hooks.on_llm_start(
-                context_wrapper, agent, filtered.instructions, filtered.input
-            )
+        await asyncio.gather(
+            hooks.on_llm_start(context_wrapper, agent, filtered.instructions, filtered.input),
+            (
+                agent.hooks.on_llm_start(
+                    context_wrapper, agent, filtered.instructions, filtered.input
+                )
+                if agent.hooks
+                else _coro.noop_coroutine()
+            ),
+        )
 
         # 1. Stream the output events
         async for event in model.stream_response(
@@ -1034,7 +1035,7 @@ class AgentRunner:
                 )
                 context_wrapper.usage.add(usage)
 
-            if isinstance(event, ResponseOutputItemAddedEvent):
+            if isinstance(event, ResponseOutputItemDoneEvent):
                 output_item = event.item
 
                 if isinstance(output_item, _TOOL_CALL_TYPES):
@@ -1056,8 +1057,15 @@ class AgentRunner:
             streamed_result._event_queue.put_nowait(RawResponsesStreamEvent(data=event))
 
         # Call hook just after the model response is finalized.
-        if agent.hooks and final_response is not None:
-            await agent.hooks.on_llm_end(context_wrapper, agent, final_response)
+        if final_response is not None:
+            await asyncio.gather(
+                (
+                    agent.hooks.on_llm_end(context_wrapper, agent, final_response)
+                    if agent.hooks
+                    else _coro.noop_coroutine()
+                ),
+                hooks.on_llm_end(context_wrapper, agent, final_response),
+            )
 
         # 2. At this point, the streaming is complete for this turn of the agent loop.
         if not final_response:
@@ -1150,6 +1158,7 @@ class AgentRunner:
             output_schema,
             all_tools,
             handoffs,
+            hooks,
             context_wrapper,
             run_config,
             tool_use_tracker,
@@ -1345,6 +1354,7 @@ class AgentRunner:
         output_schema: AgentOutputSchemaBase | None,
         all_tools: list[Tool],
         handoffs: list[Handoff],
+        hooks: RunHooks[TContext],
         context_wrapper: RunContextWrapper[TContext],
         run_config: RunConfig,
         tool_use_tracker: AgentToolUseTracker,
@@ -1364,14 +1374,21 @@ class AgentRunner:
         model = cls._get_model(agent, run_config)
         model_settings = agent.model_settings.resolve(run_config.model_settings)
         model_settings = RunImpl.maybe_reset_tool_choice(agent, tool_use_tracker, model_settings)
-        # If the agent has hooks, we need to call them before and after the LLM call
-        if agent.hooks:
-            await agent.hooks.on_llm_start(
-                context_wrapper,
-                agent,
-                filtered.instructions,  # Use filtered instructions
-                filtered.input,  # Use filtered input
-            )
+
+        # If we have run hooks, or if the agent has hooks, we need to call them before the LLM call
+        await asyncio.gather(
+            hooks.on_llm_start(context_wrapper, agent, filtered.instructions, filtered.input),
+            (
+                agent.hooks.on_llm_start(
+                    context_wrapper,
+                    agent,
+                    filtered.instructions,  # Use filtered instructions
+                    filtered.input,  # Use filtered input
+                )
+                if agent.hooks
+                else _coro.noop_coroutine()
+            ),
+        )
 
         new_response = await model.get_response(
             system_instructions=filtered.instructions,
@@ -1387,11 +1404,18 @@ class AgentRunner:
             conversation_id=conversation_id,
             prompt=prompt_config,
         )
-        # If the agent has hooks, we need to call them after the LLM call
-        if agent.hooks:
-            await agent.hooks.on_llm_end(context_wrapper, agent, new_response)
 
         context_wrapper.usage.add(new_response.usage)
+
+        # If we have run hooks, or if the agent has hooks, we need to call them after the LLM call
+        await asyncio.gather(
+            (
+                agent.hooks.on_llm_end(context_wrapper, agent, new_response)
+                if agent.hooks
+                else _coro.noop_coroutine()
+            ),
+            hooks.on_llm_end(context_wrapper, agent, new_response),
+        )
 
         return new_response
 
@@ -1481,7 +1505,7 @@ class AgentRunner:
         cls,
         session: Session | None,
         original_input: str | list[TResponseInputItem],
-        result: RunResult,
+        new_items: list[RunItem],
     ) -> None:
         """Save the conversation turn to session."""
         if session is None:
@@ -1491,7 +1515,7 @@ class AgentRunner:
         input_list = ItemHelpers.input_to_new_input_list(original_input)
 
         # Convert new items to input format
-        new_items_as_input = [item.to_input_item() for item in result.new_items]
+        new_items_as_input = [item.to_input_item() for item in new_items]
 
         # Save all items from this turn
         items_to_save = input_list + new_items_as_input
