@@ -24,12 +24,26 @@ class RealtimeModelInputTextContent(TypedDict):
     text: str
 
 
+class RealtimeModelInputImageContent(TypedDict, total=False):
+    """An image to be sent to the model.
+
+    The Realtime API expects `image_url` to be a string data/remote URL.
+    """
+
+    type: Literal["input_image"]
+    image_url: str
+    """String URL (data:... or https:...)."""
+
+    detail: NotRequired[str]
+    """Optional detail hint such as 'high', 'low', or 'auto'."""
+
+
 class RealtimeModelUserInputMessage(TypedDict):
     """A message to be sent to the model."""
 
     type: Literal["message"]
     role: Literal["user"]
-    content: list[RealtimeModelInputTextContent]
+    content: list[RealtimeModelInputTextContent | RealtimeModelInputImageContent]
 
 
 RealtimeModelUserInput: TypeAlias = Union[str, RealtimeModelUserInputMessage]
@@ -80,6 +94,9 @@ class RealtimeModelSendToolOutput:
 @dataclass
 class RealtimeModelSendInterrupt:
     """Send an interrupt to the model."""
+
+    force_response_cancel: bool = False
+    """Force sending a response.cancel event even if automatic cancellation is enabled."""
 
 
 @dataclass
