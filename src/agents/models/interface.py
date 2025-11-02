@@ -5,6 +5,8 @@ import enum
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
+from openai.types.responses.response_prompt_param import ResponsePromptParam
+
 from ..agent_output import AgentOutputSchemaBase
 from ..handoffs import Handoff
 from ..items import ModelResponse, TResponseInputItem, TResponseStreamEvent
@@ -46,6 +48,8 @@ class Model(abc.ABC):
         tracing: ModelTracing,
         *,
         previous_response_id: str | None,
+        conversation_id: str | None,
+        prompt: ResponsePromptParam | None,
     ) -> ModelResponse:
         """Get a response from the model.
 
@@ -59,6 +63,8 @@ class Model(abc.ABC):
             tracing: Tracing configuration.
             previous_response_id: the ID of the previous response. Generally not used by the model,
                 except for the OpenAI Responses API.
+            conversation_id: The ID of the stored conversation, if any.
+            prompt: The prompt config to use for the model.
 
         Returns:
             The full model response.
@@ -77,6 +83,8 @@ class Model(abc.ABC):
         tracing: ModelTracing,
         *,
         previous_response_id: str | None,
+        conversation_id: str | None,
+        prompt: ResponsePromptParam | None,
     ) -> AsyncIterator[TResponseStreamEvent]:
         """Stream a response from the model.
 
@@ -90,6 +98,8 @@ class Model(abc.ABC):
             tracing: Tracing configuration.
             previous_response_id: the ID of the previous response. Generally not used by the model,
                 except for the OpenAI Responses API.
+            conversation_id: The ID of the stored conversation, if any.
+            prompt: The prompt config to use for the model.
 
         Returns:
             An iterator of response stream events, in OpenAI Responses format.

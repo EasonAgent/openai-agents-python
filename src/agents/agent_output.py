@@ -38,7 +38,7 @@ class AgentOutputSchemaBase(abc.ABC):
     @abc.abstractmethod
     def is_strict_json_schema(self) -> bool:
         """Whether the JSON schema is in strict mode. Strict mode constrains the JSON schema
-        features, but guarantees valis JSON. See here for details:
+        features, but guarantees valid JSON. See here for details:
         https://platform.openai.com/docs/guides/structured-outputs#supported-schemas
         """
         pass
@@ -115,8 +115,8 @@ class AgentOutputSchema(AgentOutputSchemaBase):
             except UserError as e:
                 raise UserError(
                     "Strict JSON schema is enabled, but the output type is not valid. "
-                    "Either make the output type strict, or pass output_schema_strict=False to "
-                    "your Agent()"
+                    "Either make the output type strict, "
+                    "or wrap your type with AgentOutputSchema(YourType, strict_json_schema=False)"
                 ) from e
 
     def is_plain_text(self) -> bool:

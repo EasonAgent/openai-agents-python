@@ -5,7 +5,13 @@ from typing import Literal
 from openai import AsyncOpenAI
 
 from . import _config
-from .agent import Agent, ToolsToFinalOutputFunction, ToolsToFinalOutputResult
+from .agent import (
+    Agent,
+    AgentBase,
+    StopAtTools,
+    ToolsToFinalOutputFunction,
+    ToolsToFinalOutputResult,
+)
 from .agent_output import AgentOutputSchema, AgentOutputSchemaBase
 from .computer import AsyncComputer, Button, Computer, Environment
 from .exceptions import (
@@ -14,6 +20,9 @@ from .exceptions import (
     MaxTurnsExceeded,
     ModelBehaviorError,
     OutputGuardrailTripwireTriggered,
+    RunErrorDetails,
+    ToolInputGuardrailTripwireTriggered,
+    ToolOutputGuardrailTripwireTriggered,
     UserError,
 )
 from .guardrail import (
@@ -39,11 +48,15 @@ from .items import (
     TResponseInputItem,
 )
 from .lifecycle import AgentHooks, RunHooks
+from .memory import OpenAIConversationsSession, Session, SessionABC, SQLiteSession
 from .model_settings import ModelSettings
 from .models.interface import Model, ModelProvider, ModelTracing
+from .models.multi_provider import MultiProvider
 from .models.openai_chatcompletions import OpenAIChatCompletionsModel
 from .models.openai_provider import OpenAIProvider
 from .models.openai_responses import OpenAIResponsesModel
+from .prompts import DynamicPromptFunction, GenerateDynamicPromptData, Prompt
+from .repl import run_demo_loop
 from .result import RunResult, RunResultStreaming
 from .run import RunConfig, Runner
 from .run_context import RunContextWrapper, TContext
@@ -54,14 +67,40 @@ from .stream_events import (
     StreamEvent,
 )
 from .tool import (
+    CodeInterpreterTool,
     ComputerTool,
     FileSearchTool,
     FunctionTool,
     FunctionToolResult,
+    HostedMCPTool,
+    ImageGenerationTool,
+    LocalShellCommandRequest,
+    LocalShellExecutor,
+    LocalShellTool,
+    MCPToolApprovalFunction,
+    MCPToolApprovalFunctionResult,
+    MCPToolApprovalRequest,
     Tool,
+    ToolOutputFileContent,
+    ToolOutputFileContentDict,
+    ToolOutputImage,
+    ToolOutputImageDict,
+    ToolOutputText,
+    ToolOutputTextDict,
     WebSearchTool,
     default_tool_error_function,
     function_tool,
+)
+from .tool_guardrails import (
+    ToolGuardrailFunctionOutput,
+    ToolInputGuardrail,
+    ToolInputGuardrailData,
+    ToolInputGuardrailResult,
+    ToolOutputGuardrail,
+    ToolOutputGuardrailData,
+    ToolOutputGuardrailResult,
+    tool_input_guardrail,
+    tool_output_guardrail,
 )
 from .tracing import (
     AgentSpanData,
@@ -92,6 +131,7 @@ from .tracing import (
     handoff_span,
     mcp_tools_span,
     set_trace_processors,
+    set_trace_provider,
     set_tracing_disabled,
     set_tracing_export_api_key,
     speech_group_span,
@@ -104,7 +144,7 @@ from .version import __version__
 
 
 def set_default_openai_key(key: str, use_for_tracing: bool = True) -> None:
-    """Set the default OpenAI API key to use for LLM requests (and optionally tracing(). This is
+    """Set the default OpenAI API key to use for LLM requests (and optionally tracing()). This is
     only necessary if the OPENAI_API_KEY environment variable is not already set.
 
     If provided, this key will be used instead of the OPENAI_API_KEY environment variable.
@@ -147,14 +187,18 @@ def enable_verbose_stdout_logging():
 
 __all__ = [
     "Agent",
+    "AgentBase",
+    "StopAtTools",
     "ToolsToFinalOutputFunction",
     "ToolsToFinalOutputResult",
     "Runner",
+    "run_demo_loop",
     "Model",
     "ModelProvider",
     "ModelTracing",
     "ModelSettings",
     "OpenAIChatCompletionsModel",
+    "MultiProvider",
     "OpenAIProvider",
     "OpenAIResponsesModel",
     "AgentOutputSchema",
@@ -166,6 +210,11 @@ __all__ = [
     "AgentsException",
     "InputGuardrailTripwireTriggered",
     "OutputGuardrailTripwireTriggered",
+    "ToolInputGuardrailTripwireTriggered",
+    "ToolOutputGuardrailTripwireTriggered",
+    "DynamicPromptFunction",
+    "GenerateDynamicPromptData",
+    "Prompt",
     "MaxTurnsExceeded",
     "ModelBehaviorError",
     "UserError",
@@ -176,6 +225,15 @@ __all__ = [
     "GuardrailFunctionOutput",
     "input_guardrail",
     "output_guardrail",
+    "ToolInputGuardrail",
+    "ToolOutputGuardrail",
+    "ToolGuardrailFunctionOutput",
+    "ToolInputGuardrailData",
+    "ToolInputGuardrailResult",
+    "ToolOutputGuardrailData",
+    "ToolOutputGuardrailResult",
+    "tool_input_guardrail",
+    "tool_output_guardrail",
     "handoff",
     "Handoff",
     "HandoffInputData",
@@ -189,12 +247,16 @@ __all__ = [
     "ToolCallItem",
     "ToolCallOutputItem",
     "ReasoningItem",
-    "ModelResponse",
     "ItemHelpers",
     "RunHooks",
     "AgentHooks",
+    "Session",
+    "SessionABC",
+    "SQLiteSession",
+    "OpenAIConversationsSession",
     "RunContextWrapper",
     "TContext",
+    "RunErrorDetails",
     "RunResult",
     "RunResultStreaming",
     "RunConfig",
@@ -206,8 +268,23 @@ __all__ = [
     "FunctionToolResult",
     "ComputerTool",
     "FileSearchTool",
+    "CodeInterpreterTool",
+    "ImageGenerationTool",
+    "LocalShellCommandRequest",
+    "LocalShellExecutor",
+    "LocalShellTool",
     "Tool",
     "WebSearchTool",
+    "HostedMCPTool",
+    "MCPToolApprovalFunction",
+    "MCPToolApprovalRequest",
+    "MCPToolApprovalFunctionResult",
+    "ToolOutputText",
+    "ToolOutputTextDict",
+    "ToolOutputImage",
+    "ToolOutputImageDict",
+    "ToolOutputFileContent",
+    "ToolOutputFileContentDict",
     "function_tool",
     "Usage",
     "add_trace_processor",
@@ -220,6 +297,7 @@ __all__ = [
     "guardrail_span",
     "handoff_span",
     "set_trace_processors",
+    "set_trace_provider",
     "set_tracing_disabled",
     "speech_group_span",
     "transcription_span",
