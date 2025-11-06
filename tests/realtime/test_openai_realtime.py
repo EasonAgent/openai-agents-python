@@ -54,6 +54,18 @@ class TestConnectionLifecycle(TestOpenAIRealtimeWebSocketModel):
                 await model.connect(config)
 
     @pytest.mark.asyncio
+    async def test_connect_with_call_id_and_model_raises_error(self, model):
+        """Test that specifying both call_id and model raises UserError."""
+        config = {
+            "api_key": "test-api-key-123",
+            "call_id": "call-123",
+            "initial_model_settings": {"model_name": "gpt-4o-realtime-preview"},
+        }
+
+        with pytest.raises(UserError, match="Cannot specify both `call_id` and `model_name`"):
+            await model.connect(config)
+
+    @pytest.mark.asyncio
     async def test_connect_with_string_api_key(self, model, mock_websocket):
         """Test successful connection with string API key."""
         config = {
@@ -518,9 +530,7 @@ class TestSendEventAndConfig(TestOpenAIRealtimeWebSocketModel):
         model._ongoing_response = True
         model._created_session = SimpleNamespace(
             audio=SimpleNamespace(
-                input=SimpleNamespace(
-                    turn_detection=SimpleNamespace(interrupt_response=True)
-                )
+                input=SimpleNamespace(turn_detection=SimpleNamespace(interrupt_response=True))
             )
         )
 
@@ -545,9 +555,7 @@ class TestSendEventAndConfig(TestOpenAIRealtimeWebSocketModel):
         model._ongoing_response = True
         model._created_session = SimpleNamespace(
             audio=SimpleNamespace(
-                input=SimpleNamespace(
-                    turn_detection=SimpleNamespace(interrupt_response=True)
-                )
+                input=SimpleNamespace(turn_detection=SimpleNamespace(interrupt_response=True))
             )
         )
 

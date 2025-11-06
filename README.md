@@ -1,4 +1,4 @@
-# OpenAI Agents SDK
+# OpenAI Agents SDK [![PyPI](https://img.shields.io/pypi/v/openai-agents?label=pypi%20package)](https://pypi.org/project/openai-agents/)
 
 The OpenAI Agents SDK is a lightweight yet powerful framework for building multi-agent workflows. It is provider-agnostic, supporting the OpenAI Responses and Chat Completions APIs, as well as 100+ other LLMs.
 
@@ -304,6 +304,12 @@ make tests  # run tests
 make mypy   # run typechecker
 make lint   # run linter
 make format-check # run style checker
+```
+
+Format code if `make format-check` fails above by running:
+
+```
+make format
 ```
 
 ## Acknowledgements
