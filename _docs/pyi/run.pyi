@@ -238,3 +238,7 @@ class AgentUpdatedStreamEvent:
 
 
 
+class TraceCtxManager:
+    """Creates a trace only if there is no current trace, and manages the trace lifecycle."""
+    def __enter__(self) -> TraceCtxManager: ...
+    def __exit__(self, exc_type, exc_val, exc_tb): ...
