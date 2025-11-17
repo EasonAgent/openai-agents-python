@@ -1,11 +1,10 @@
 NOTE: 参见 [agent_ref/doc]
 NOTE: 目前仅仅clone下来, 未做改写
 
-1. openai-agents [github](https://github.com/openai/openai-agents-python/releases); [doc](https://openai.github.io/openai-agents-python/)
-
-## todos
-- [x] upgrade to 0.1.16 (2025-05-28)
-- [x] test looong input condition @2025-05-28
+- openai-agents [github](https://github.com/openai/openai-agents-python/releases); [doc](https://openai.github.io/openai-agents-python/)
+- fork: <https://github.com/EasonAgent/openai-agents-python>
+- branch: eason
+- tag: v0.5.0
 
 
 ## 更新到 0.1.13
