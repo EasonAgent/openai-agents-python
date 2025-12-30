@@ -615,6 +615,7 @@ class Converter:
                     "name": tool.name,
                     "description": tool.description or "",
                     "parameters": tool.params_json_schema,
+                    "strict": tool.strict_json_schema,
                 },
             }
 
@@ -631,5 +632,6 @@ class Converter:
                 "name": handoff.tool_name,
                 "description": handoff.tool_description,
                 "parameters": handoff.input_json_schema,
+                "strict": handoff.strict_json_schema,
             },
         }
