@@ -372,6 +372,8 @@ class Converter:
         result: list[ChatCompletionMessageParam] = []
         current_assistant_msg: ChatCompletionAssistantMessageParam | None = None
         pending_thinking_blocks: list[dict[str, str]] | None = None
+        # ADD: Pending reasoning content
+        pending_reasoning_content: str | None = None
 
         def flush_assistant_message() -> None:
             nonlocal current_assistant_msg
@@ -478,6 +480,11 @@ class Converter:
                     combined = "\n".join(text_segments)
                     new_asst["content"] = combined
 
+                # ADD:
+                if pending_reasoning_content:
+                    new_asst["reasoning_content"] = pending_reasoning_content
+                    pending_reasoning_content = None
+
                 new_asst["tool_calls"] = []
                 current_assistant_msg = new_asst
 
@@ -522,6 +529,11 @@ class Converter:
                     # We ignore type errors because pending_thinking_blocks is not openai standard
                     asst["content"] = pending_thinking_blocks + asst["content"]  # type: ignore
                     pending_thinking_blocks = None  # Clear after using
+
+                # ADD:
+                if pending_reasoning_content:
+                    asst["reasoning_content"] = pending_reasoning_content
+                    pending_reasoning_content = None
 
                 tool_calls = list(asst.get("tool_calls", []))
                 arguments = func_call["arguments"] if func_call["arguments"] else "{}"
@@ -582,6 +594,11 @@ class Converter:
                     # This preserves the original behavior
                     pending_thinking_blocks = reconstructed_thinking_blocks
 
+                # ADD:
+                summary = reasoning_item.get("summary", [])
+                if summary:
+                    reasoning_content = summary[0].get("text", "")
+                    pending_reasoning_content = reasoning_content
             # 8) If we haven't recognized it => fail or ignore
             else:
                 raise UserError(f"Unhandled item type or structure: {item}")
